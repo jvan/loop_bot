@@ -67,6 +67,9 @@ bool Playback  = false;
 //----- Functions -----------------------------------------
 
 void setup() {
+  Serial.begin(9600);
+  Serial.println("loop_bot started...");
+
   // For each channel initialize the input and output pins and set the state.
   for (int i=0; i<NUM_CHANNELS; i++) {
     pinMode(LED_PINS[i], OUTPUT);
@@ -79,6 +82,8 @@ void setup() {
 
 
 void startRecording(unsigned long ts) {
+  Serial.println("recording start...");
+
   // Stop playback while recording.
   Recording = true;
   Playback  = false;
@@ -97,6 +102,8 @@ void startRecording(unsigned long ts) {
 
 
 void stopRecording(unsigned long ts) {
+  Serial.println("recording stop...");
+
   // Stop recording and resume playback.
   Recording = false;
   Playback  = true;
