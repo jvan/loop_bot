@@ -40,10 +40,10 @@ const unsigned int MAX_LENGTH = 15;
 //   TotalEvents[0] = 5
 //   TotalEvents[1] = 3
 //
-// The maximmum number of events is `MAX_LENGTH`. If the 
+// The maximmum number of events is `MAX_LENGTH`. If the actual number of events
+// on a channel exceeds this limit the program may not behave as expected.
 unsigned long Events[NUM_CHANNELS][MAX_LENGTH];
 int TotalEvents[NUM_CHANNELS];
-
 
 // During playback, the program loops continuously over the `Events` data. The 
 // index for each channel is stored in the `POSITION` array.
