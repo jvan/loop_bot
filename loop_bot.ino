@@ -12,10 +12,10 @@
 
 // To change the number of channnels, update the `NUM_CHANNELS` variable below
 // and add/remove pin numbers from the `LED_PINS` and `BUTTON_PINS` arrays.
-const int NUM_CHANNELS  = 2;
+const int NUM_CHANNELS  = 3;
 
-const int LED_PINS[NUM_CHANNELS]    = { 12, 13 };  // LEDs, solenoids, etc.
-const int BUTTON_PINS[NUM_CHANNELS] = {  2,  3 };
+const int LED_PINS[NUM_CHANNELS]    = { 11, 12, 13 };  // LEDs, solenoids, etc.
+const int BUTTON_PINS[NUM_CHANNELS] = {  2,  3,  4 };
 
 const unsigned int STRIKE_DURATION = 200;  // output signal time (in ms)
 const unsigned int LOOP_DURATION   = 10000; // recording and playback time (in ms)
