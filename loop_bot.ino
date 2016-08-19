@@ -53,6 +53,8 @@ int Position[NUM_CHANNELS];
 // a given channel.
 unsigned long NextEvent[NUM_CHANNELS];
 
+unsigned long TimeDiff[NUM_CHANNELS];
+
 int LedState[NUM_CHANNELS];         // current state of the 
 int PrevButtonState[NUM_CHANNELS];  // used to check for changes in button state
 
@@ -208,20 +210,28 @@ void loop() {
   if (Playback) {
     for (int i=0; i<NUM_CHANNELS; i++) {
       if (currentTime > NextEvent[i]) {
-        // TODO: Compute time skew and adjust duration to compensate. Since the
-        //       `STRIKE_DURATION` will be so short in the final implementation,
-        //       skew should be adjusted for in the inter-event delay.
+        // The difference between the `currentTime` and the `NextEvent` time for
+        // the channel will continue to accumulte and will result in a loss of 
+        // synchronization. To compensate for this we subtract the difference from
+        // the inter-event delay (see below).
+        unsigned long t_diff = currentTime - NextEvent[i];
 
         if (LedState[i] == LOW) {
           // Turn on the channel output pin for the `STRIKE_DURATION`.
           LedState[i]  = HIGH;
           NextEvent[i] = currentTime + STRIKE_DURATION;
 
+          // Because the `STRIKE_DURATION` will potentially be very short (and needs
+          // to be consistent) we store the current time difference and subtract it
+          // from the inter-event delay between strikes.
+          TimeDiff[i] = t_diff;
         } else {
-          // Turn off the channel output and delay until the next event
-          // for this channel.
+          // Turn off the channel output and delay until the next event for this 
+          // channel. Adjust the delay time to account for the accumulated time
+          // difference.
           LedState[i]  = LOW;
-          NextEvent[i] = currentTime + getNextDelay(i) - STRIKE_DURATION;
+          unsigned long t_adjust = TimeDiff[i] + t_diff;
+          NextEvent[i] = currentTime + getNextDelay(i) - STRIKE_DURATION - t_adjust;
         }
 
         // The output pin is actually set here.
