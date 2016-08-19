@@ -18,7 +18,7 @@ const int LED_PINS[NUM_CHANNELS]    = { 12, 13 };  // LEDs, solenoids, etc.
 const int BUTTON_PINS[NUM_CHANNELS] = {  2,  3 };
 
 const unsigned int STRIKE_DURATION = 200;  // output signal time (in ms)
-const unsigned int LOOP_DURATION   = 7000; // recording and playback time (in ms)
+const unsigned int LOOP_DURATION   = 10000; // recording and playback time (in ms)
 
 // The maximum number of events on a single channel for a given recording window.
 // Since arrays are static we need to pre-allocate space to store the timestamps.
