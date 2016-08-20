@@ -17,6 +17,8 @@ const int NUM_CHANNELS  = 3;
 const int LED_PINS[NUM_CHANNELS]    = { 11, 12, 13 };  // LEDs, solenoids, etc.
 const int BUTTON_PINS[NUM_CHANNELS] = {  2,  3,  4 };
 
+const int INDICATOR_PIN = 7;
+
 const unsigned int STRIKE_DURATION = 200;  // output signal time (in ms)
 const unsigned int LOOP_DURATION   = 10000; // recording and playback time (in ms)
 
@@ -78,6 +80,9 @@ void setup() {
     LedState[i]        = LOW;
     PrevButtonState[i] = LOW;
   }
+
+  // Initialize the recordin indicator LED pin.
+  pinMode(INDICATOR_PIN, OUTPUT);
 }
 
 
@@ -87,6 +92,9 @@ void startRecording(unsigned long ts) {
   // Stop playback while recording.
   Recording = true;
   Playback  = false;
+
+  // Turn on the recording indicator LED.
+  digitalWrite(INDICATOR_PIN, HIGH);
 
   // Initialize/reset each channel. To synchronize the recording the start time
   // is set as the first event for each channel. When the recording is finished,
@@ -107,6 +115,9 @@ void stopRecording(unsigned long ts) {
   // Stop recording and resume playback.
   Recording = false;
   Playback  = true;
+
+  // Turn off the recording indicator LED.
+  digitalWrite(INDICATOR_PIN, LOW);
 
   // Set the stop time as the final event for each channel and initialize the
   // the playback variables.
