@@ -102,6 +102,12 @@ void startRecording(unsigned long ts) {
   for (int i=0; i<NUM_CHANNELS; i++) {
     Events[i][0] = ts;
     Position[i]  = 1;
+
+    // Make sure all output pins are off.
+    LedState[i] = LOW;
+
+    int ledPin = LED_PINS[i];
+    digitalWrite(ledPin, LedState[i]);
   }
   
   // Set the stop time for the recording window.
