@@ -47,6 +47,8 @@ const unsigned int MAX_LENGTH = 15;
 unsigned long Events[NUM_CHANNELS][MAX_LENGTH];
 int TotalEvents[NUM_CHANNELS];
 
+bool IsActive[NUM_CHANNELS];
+
 // During playback, the program loops continuously over the `Events` data. The 
 // index for each channel is stored in the `POSITION` array.
 int Position[NUM_CHANNELS];
@@ -103,6 +105,9 @@ void startRecording(unsigned long ts) {
     Events[i][0] = ts;
     Position[i]  = 1;
 
+    // Activate all channels.
+    IsActive[i] = true;
+
     // Make sure all output pins are off.
     LedState[i] = LOW;
 
@@ -145,12 +150,12 @@ void stopRecording(unsigned long ts) {
     
     // Initialize the channel position for playback. Since the first event has
     // already been calculated the position should be set to 2;
-    //
-    // TODO: If there were no events on a particular channel, this position will
-    //       be invalid. It might be better to set the position to 1 here and 
-    //       increment the position in `getNextDelay` prior to computing the time
-    //       difference.
     Position[i] = 2;
+
+    // Disable channels without any events.
+    if (TotalEvents[i] == 2) {
+      IsActive[i] = false;
+    }
   }
 }
 
@@ -233,6 +238,10 @@ void loop() {
 
   if (Playback) {
     for (int i=0; i<NUM_CHANNELS; i++) {
+      if (!IsActive[i]) {
+        continue;
+      }
+
       if (currentTime > NextEvent[i]) {
         // The difference between the `currentTime` and the `NextEvent` time for
         // the channel will continue to accumulte and will result in a loss of 
