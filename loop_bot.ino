@@ -31,6 +31,8 @@ const unsigned int RECORD_TIMEOUT  = 2000;
 // recording window is increased this may need to be adjusted as well.
 const unsigned int MAX_LENGTH = 15;
 
+// Playback will stop after the pattern has been played `MAX_LOOPS` times.
+const unsigned int MAX_LOOPS = 3;
 
 //----- Global Variables -----------------------------------
 
@@ -65,7 +67,10 @@ unsigned long TimeDiff[NUM_CHANNELS];
 int LedState[NUM_CHANNELS];         // current state of the 
 int PrevButtonState[NUM_CHANNELS];  // used to check for changes in button state
 
+unsigned long RecordStart;    // timestamp for the start of the recording window
+unsigned long LoopDuration;   // total recording/playback time
 unsigned long LastEventTime;  // used to stop recording session
+unsigned long PlaybackStart;  // used to stop playback
 
 bool Recording = false;
 bool Playback  = false;
@@ -118,8 +123,8 @@ void startRecording(unsigned long ts) {
     digitalWrite(ledPin, LedState[i]);
   }
   
-  // Set the stop time for the recording window.
-  RecordTimeout = ts + LOOP_DURATION;
+  // Store the start time so we can compute the loop duration.
+  RecordStart = ts;
 }
 
 
@@ -160,6 +165,10 @@ void stopRecording(unsigned long ts) {
       IsActive[i] = false;
     }
   }
+
+  // Calculate the loop duration and the playback start.
+  LoopDuration = ts - RecordStart;
+  PlaybackStart = ts + 1000;  // add the same padding as above
 }
 
 
@@ -245,6 +254,19 @@ void loop() {
       // Save the button state for this channel.
       PrevButtonState[i] = buttonState;
       delay(50);  // add a slight delay for debouncing
+    }
+  }
+
+  // Check to see if we need to stop playback
+  if (Playback) {
+    // Compute the time since playback began and the total playtime. Automatically
+    // stop playback the maximum number of loops has been exceeded.
+    unsigned long playTime = currentTime - PlaybackStart;
+    unsigned long maxPlayTime = (unsigned long)MAX_LOOPS * LoopDuration;
+
+    if ((currentTime > PlaybackStart) && (playTime > maxPlayTime)) {
+      Serial.println("stopping playback...");
+      Playback = false;
     }
   }
 
