@@ -20,7 +20,10 @@ const int BUTTON_PINS[NUM_CHANNELS] = {  2,  3,  4 };
 const int INDICATOR_PIN = 7;
 
 const unsigned int STRIKE_DURATION = 200;  // output signal time (in ms)
-const unsigned int LOOP_DURATION   = 10000; // recording and playback time (in ms)
+
+// Recording will stop once `RECORD_TIMEOUT` milliseconds have elapsed since
+// the last event.
+const unsigned int RECORD_TIMEOUT  = 2000;
 
 // The maximum number of events on a single channel for a given recording window.
 // Since arrays are static we need to pre-allocate space to store the timestamps.
@@ -62,7 +65,7 @@ unsigned long TimeDiff[NUM_CHANNELS];
 int LedState[NUM_CHANNELS];         // current state of the 
 int PrevButtonState[NUM_CHANNELS];  // used to check for changes in button state
 
-unsigned long RecordTimeout;  // the end of the current recording window (timestamp)
+unsigned long LastEventTime;  // used to stop recording session
 
 bool Recording = false;
 bool Playback  = false;
@@ -164,9 +167,12 @@ void addEvent(int button, unsigned long ts) {
   /// Add the event time to the end of the channel array.
   int pos = Position[button];
   Events[button][pos] = ts;
-  
+
   // Increment the index position for the channel.
   Position[button] = pos + 1;
+
+  // Store the last event time so we can automatically stop the recording.
+  LastEventTime = ts;
 }
 
 
@@ -204,8 +210,14 @@ void loop() {
   unsigned long currentTime = millis();
 
   // Check to see if we need to stop recording. 
-  if (Recording && currentTime > RecordTimeout) {
-    stopRecording(currentTime);
+  if (Recording) {
+    // If the elapsed time since the last event is greater than `RECORD_TIMEOUT`
+    // automatically stop the recording session.
+    unsigned long elapsed = currentTime - LastEventTime;
+
+    if (elapsed > RECORD_TIMEOUT) {
+      stopRecording(currentTime);
+    }
   }
 
   // Check for any button press events.
