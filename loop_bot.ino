@@ -34,6 +34,9 @@ const unsigned int MAX_LENGTH = 15;
 // Playback will stop after the pattern has been played `MAX_LOOPS` times.
 const unsigned int MAX_LOOPS = 3;
 
+// Add a distortion phase after `MAX_LOOPS` has been exceeded.
+const bool DISTORTION = true;
+
 //----- Global Variables -----------------------------------
 
 // For each channel we store a series of timestamps corresponding to button press
@@ -71,6 +74,8 @@ unsigned long RecordStart;    // timestamp for the start of the recording window
 unsigned long LoopDuration;   // total recording/playback time
 unsigned long LastEventTime;  // used to stop recording session
 unsigned long PlaybackStart;  // used to stop playback
+
+unsigned int LoopCount;
 
 bool Recording = false;
 bool Playback  = false;
@@ -180,6 +185,8 @@ void stopRecording(unsigned long ts) {
   // Calculate the loop duration and the playback start.
   LoopDuration = ts - RecordStart;
   PlaybackStart = ts + 1000;  // add the same padding as above
+
+  LoopCount = 0;
 }
 
 
@@ -224,6 +231,41 @@ unsigned long getNextDelay(int button) {
   return nextDelay;
 }
 
+unsigned int activeChannelCount() {
+  unsigned int activeChannels = 0;
+  for (int i=0; i<NUM_CHANNELS; i++) {
+    if (IsActive[i]) {
+      activeChannels += 1;
+    }
+  }
+  return activeChannels;
+}
+
+void distortPattern() {
+  // Distort the original pattern by removing the last event.
+  for (int i=0; i<NUM_CHANNELS; i++) {
+    // Turn off all output pins.
+    digitalWrite(LED_PINS[i], LOW);
+
+    // Ignore channels that are not active.
+    if (!IsActive[i]) continue;
+
+    // Remove the last event for the channel.
+    // NOTE: This will destroy the loop synchronization.
+    channelMsg(i, "removing event");
+
+    unsigned int numEvents = TotalEvents[i];
+    TotalEvents[i] = numEvents - 1;
+    Position[i]    = 1;
+
+    // Disable the channel if there are only two events remaining.
+    if (TotalEvents[i] == 2) {
+      channelMsg(i, "de-activating channel");
+      IsActive[i] = false;
+    }
+  }
+  Serial.flush();
+}
 
 void loop() {
   // NOTE: Any calculations involving timestamps must use `unsigned long` types.
@@ -269,15 +311,36 @@ void loop() {
   }
 
   // Check to see if we need to stop playback
-  if (Playback) {
-    // Compute the time since playback began and the total playtime. Automatically
-    // stop playback the maximum number of loops has been exceeded.
-    unsigned long playTime = currentTime - PlaybackStart;
-    unsigned long maxPlayTime = (unsigned long)MAX_LOOPS * LoopDuration;
+  if (Playback && currentTime > PlaybackStart) {
+    unsigned int currentLoop = int((currentTime - PlaybackStart) / LoopDuration);
+    bool startNewLoop = false;
 
-    if ((currentTime > PlaybackStart) && (playTime > maxPlayTime)) {
-      Serial.println("stopping playback...");
-      Playback = false;
+    if (currentLoop > LoopCount) {
+      Serial.print("loop ");
+      Serial.println(currentLoop);
+
+      LoopCount    = currentLoop;
+      startNewLoop = true;  // signal that a new loop has started
+    }
+
+    // If the pattern has been played `MAX_LOOPS` times either stop the playback
+    // immediately or begin distorting the pattern.
+    if (LoopCount >= MAX_LOOPS) {
+      // If pattern distortion has not been enabled, simply stop playback as soon
+      // as the maximum number of loop iterations has completed. Otherwise,
+      // continue to distort the pattern.
+      if (!DISTORTION) {
+        Serial.println("stopping playback...");
+        Playback = false;
+      } else if (startNewLoop){
+        distortPattern();
+
+        // Stop playback once the pattern has been completely erased.
+        if (activeChannelCount() == 0) {
+          Serial.println("all channel inactive; stopping playback");
+          Playback = false;
+        }
+      }
     }
   }
 
