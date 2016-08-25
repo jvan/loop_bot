@@ -78,6 +78,17 @@ bool Playback  = false;
 
 //----- Functions -----------------------------------------
 
+void channelMsg(unsigned int channel, char* msg, bool flush=false) {
+  Serial.print("[channel ");
+  Serial.print(channel);
+  Serial.print("]: ");
+  Serial.print(msg);
+  Serial.print("\n");
+  if (flush) {
+    Serial.flush();
+  }
+}
+
 void setup() {
   Serial.begin(9600);
   Serial.println("loop_bot started...");
